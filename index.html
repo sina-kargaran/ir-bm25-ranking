@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BM25 Ranking Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        h1 .gradient-text {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .input-section {
+            margin-bottom: 30px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 1.1em;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        
+        .documents-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .document {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .document-result {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .document-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .score-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        
+        .highlighted-text {
+            line-height: 1.6;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .highlight {
+            background-color: #ffeb3b;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        
+        .term-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .term-stat {
+            background: #e3f2fd;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            border-left: 3px solid #2196f3;
+        }
+        
+        .no-results {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 40px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        
+        .bm25-params {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ff9800;
+        }
+        
+        .bm25-params h3 {
+            color: #e65100;
+            margin-bottom: 10px;
+        }
+        
+        .ranking-info {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            color: #555;
+        }
+        
+        .bm25-formula {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4caf50;
+            font-family: 'Times New Roman', serif;
+            text-align: center;
+        }
+        
+        .bm25-formula h3 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+        
+        .formula-container {
+            font-size: 1.2em;
+            line-height: 1.8;
+            margin: 10px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .documents-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 <span class="gradient-text">BM25 Ranking Visualizer</span></h1>
+        
+        <div class="input-section">
+            <label for="query">Search Query:</label>
+            <input type="text" id="query" placeholder="Enter your search query..." oninput="calculateBM25()">
+        </div>
+        
+        <div class="documents-container">
+            <div class="document">
+                <label for="title1">Title 1:</label>
+                <input type="text" id="title1" placeholder="Enter the first document title..." oninput="calculateBM25()">
+                <br><br>
+                <label for="doc1">Document 1:</label>
+                <textarea id="doc1" placeholder="Enter the first document text..." oninput="calculateBM25()"></textarea>
+            </div>
+            <div class="document">
+                <label for="title2">Title 2:</label>
+                <input type="text" id="title2" placeholder="Enter the second document title..." oninput="calculateBM25()">
+                <br><br>
+                <label for="doc2">Document 2:</label>
+                <textarea id="doc2" placeholder="Enter the second document text..." oninput="calculateBM25()"></textarea>
+            </div>
+        </div>
+        
+        <div class="bm25-params">
+            <h3>BM25 Parameters</h3>
+            <p><strong>k1:</strong> 1.2 (term frequency saturation parameter)</p>
+            <p><strong>b:</strong> 0.75 (length normalization parameter)</p>
+        </div>
+        
+        <div class="bm25-formula">
+            <h3>BM25 Formula</h3>
+            <div class="formula-container">
+                <p>$$\text{BM25}(D, Q) = \sum_{i=1}^{n} \log \frac{M + 1}{df(q_i)} \cdot \frac{f(q_i, D) \cdot (k_1 + 1)}{f(q_i, D) + k_1 \cdot \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)}$$</p>
+            </div>
+        </div>
+        
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        function tokenize(text) {
+            return text.toLowerCase().match(/\b\w+\b/g) || [];
+        }
+        
+        function calculateTF(term, document) {
+            const tokens = tokenize(document);
+            return tokens.filter(token => token === term).length;
+        }
+        
+        function calculateIDF(term, corpus) {
+            const docsContainingTerm = corpus.filter(doc => tokenize(doc).includes(term)).length;
+            return docsContainingTerm > 0 ? Math.log((corpus.length + 1) / docsContainingTerm) : 0;
+        }
+        
+        function calculateBM25Score(query, document, corpus, k1 = 1.2, b = 0.75) {
+            const queryTerms = tokenize(query);
+            const docTokens = tokenize(document);
+            const docLength = docTokens.length;
+            const avgDocLength = corpus.reduce((sum, doc) => sum + tokenize(doc).length, 0) / corpus.length;
+            
+            let score = 0;
+            const termStats = {};
+            const termCounts = {};
+            
+            // Count query term frequencies
+            queryTerms.forEach(term => {
+                termCounts[term] = (termCounts[term] || 0) + 1;
+            });
+            
+            Object.entries(termCounts).forEach(([term, queryTF]) => {
+                const tf = calculateTF(term, document);
+                const idf = calculateIDF(term, corpus);
+                
+                // Calculate TF transform (BM25 TF component)
+                const tfTransform = (tf * (k1 + 1)) / (tf + k1 * (1 - b + b * (docLength / avgDocLength)));
+                
+                const termScore = queryTF * idf * tfTransform;
+                
+                score += termScore;
+                
+                // Only include in stats if term exists in both query and document
+                if (tf > 0) {
+                    termStats[term] = {
+                        tf: tf,
+                        queryTF: queryTF,
+                        tfTransform: tfTransform,
+                        idf: idf,
+                        score: termScore
+                    };
+                }
+            });
+            
+            return { score, termStats, docLength, avgDocLength };
+        }
+        
+        function highlightTerms(text, queryTerms) {
+            let highlightedText = text;
+            const terms = [...new Set(queryTerms)]; // Remove duplicates
+            
+            // Sort terms by length (longest first) to avoid partial matches
+            terms.sort((a, b) => b.length - a.length);
+            
+            terms.forEach(term => {
+                const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                highlightedText = highlightedText.replace(regex, `<span class="highlight">$&</span>`);
+            });
+            
+            return highlightedText;
+        }
+        
+        function calculateBM25() {
+            const query = document.getElementById('query').value.trim();
+            const title1 = document.getElementById('title1').value.trim();
+            const title2 = document.getElementById('title2').value.trim();
+            const doc1 = document.getElementById('doc1').value.trim();
+            const doc2 = document.getElementById('doc2').value.trim();
+            const resultsDiv = document.getElementById('results');
+            
+            if (!query || ((!title1 && !title2) && (!doc1 && !doc2))) {
+                resultsDiv.innerHTML = '<div class="no-results">Enter a query and at least one title or document to see BM25 calculations.</div>';
+                return;
+            }
+            
+            // Separate title and document corpora
+            const titles = [];
+            const documents = [];
+            const items = [];
+            
+            if (title1) {
+                titles.push(title1);
+                items.push({ type: 'title', name: 'Title 1', text: title1, corpus: 'titles' });
+            }
+            if (title2) {
+                titles.push(title2);
+                items.push({ type: 'title', name: 'Title 2', text: title2, corpus: 'titles' });
+            }
+            if (doc1) {
+                documents.push(doc1);
+                items.push({ type: 'document', name: 'Document 1', text: doc1, corpus: 'documents' });
+            }
+            if (doc2) {
+                documents.push(doc2);
+                items.push({ type: 'document', name: 'Document 2', text: doc2, corpus: 'documents' });
+            }
+            
+            const queryTerms = tokenize(query);
+            const results = items.map(item => {
+                const corpus = item.corpus === 'titles' ? titles : documents;
+                const { score, termStats, docLength, avgDocLength } = calculateBM25Score(query, item.text, corpus);
+                return {
+                    type: item.type,
+                    name: item.name,
+                    text: item.text,
+                    score: score,
+                    termStats: termStats,
+                    docLength: docLength,
+                    avgDocLength: avgDocLength
+                };
+            });
+            
+            // Sort by score (highest first)
+            results.sort((a, b) => b.score - a.score);
+            
+            // Calculate combined scores for doc+title pairs
+            let combinedScores = '';
+            const title1Result = results.find(r => r.name === 'Title 1');
+            const doc1Result = results.find(r => r.name === 'Document 1');
+            const title2Result = results.find(r => r.name === 'Title 2');
+            const doc2Result = results.find(r => r.name === 'Document 2');
+            
+            if (title1Result && doc1Result) {
+                const combined1 = title1Result.score + doc1Result.score;
+                combinedScores += `📝📄 Title1+Doc1: ${combined1.toFixed(4)} `;
+            }
+            if (title2Result && doc2Result) {
+                const combined2 = title2Result.score + doc2Result.score;
+                combinedScores += `📝📄 Title2+Doc2: ${combined2.toFixed(4)}`;
+            }
+            
+            let html = '<div class="ranking-info">';
+            html += `<strong>Ranking Results for Query:</strong> "${query}"`;
+            if (combinedScores) {
+                html += `<br><strong>Combined Scores:</strong> ${combinedScores}`;
+            }
+            html += '</div>';
+            
+            results.forEach((result, index) => {
+                const rankBadge = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+                const typeIcon = result.type === 'title' ? '📝' : '📄';
+                
+                html += `<div class="document-result">
+                    <div class="document-title">
+                        ${rankBadge} ${typeIcon} ${result.name}
+                        <span class="score-badge">BM25: ${result.score.toFixed(4)}</span>
+                    </div>
+                    <div class="highlighted-text">
+                        ${highlightTerms(result.text, queryTerms)}
+                    </div>
+                    <div class="term-stats">
+                        <div class="term-stat" style="background: #fff3e0; border-left-color: #ff9800;">
+                            <strong>Length Info:</strong> Doc Length=${result.docLength}, Avg Length=${result.avgDocLength.toFixed(1)}
+                        </div>`;
+                
+                Object.entries(result.termStats).forEach(([term, stats]) => {
+                    html += `<div class="term-stat">
+                        <strong>"${term}":</strong> QueryTF=${stats.queryTF}, TF=${stats.tf}, NormalizedTransformed-TF=${stats.tfTransform.toFixed(3)}, IDF=${stats.idf.toFixed(3)}, Score=${stats.score.toFixed(4)}
+                    </div>`;
+                });
+                
+                if (Object.keys(result.termStats).length === 0) {
+                    html += '<div class="term-stat" style="background: #ffebee; border-left-color: #f44336;">No matching terms found</div>';
+                }
+                
+                html += '</div></div>';
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // Initialize with example data
+        document.getElementById('query').value = 'machine learning algorithm';
+        document.getElementById('title1').value = 'Machine Learning Algorithms Overview';
+        document.getElementById('title2').value = 'Deep Learning Neural Networks Guide';
+        document.getElementById('doc1').value = 'Machine learning is a powerful algorithm that can analyze data and make predictions. This algorithm uses statistical methods to improve performance.';
+        document.getElementById('doc2').value = 'Deep learning is a subset of machine learning. Neural networks are the foundation of modern artificial intelligence and algorithm development.';
+        
+        // Calculate initial results
+        calculateBM25();
+    </script>
+    <!-- MathJax for LaTeX rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body>
+</html>
