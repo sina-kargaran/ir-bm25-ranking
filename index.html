@@ -53,7 +53,7 @@
             font-size: 1.1em;
         }
         
-        input, textarea {
+        input, textarea, select {
             width: 100%;
             padding: 12px 16px;
             border: 2px solid #e1e5e9;
@@ -63,7 +63,7 @@
             font-family: inherit;
         }
         
-        input:focus, textarea:focus {
+        input:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -171,21 +171,23 @@
         
         .bm25-params h3 {
             color: #e65100;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         
         .ranking-info {
             text-align: center;
-            margin-bottom: 20px;
-            font-size: 1.1em;
+            margin-bottom: 10px;
+            margin-top: 0px;
+            padding-top: 0px;
+            font-size: 1.05em;
             color: #555;
         }
         
         .bm25-formula {
             background: #e8f5e9;
-            padding: 15px;
+            padding: 10px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             border-left: 4px solid #4caf50;
             font-family: 'Times New Roman', serif;
             text-align: center;
@@ -197,13 +199,59 @@
         }
         
         .formula-container {
-            font-size: 1.2em;
-            line-height: 1.8;
+            font-size: 1.0em;
+            line-height: 1.2;
             margin: 10px 0;
         }
         
+        .param-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 5px;
+        }
+        
+        .param-control {
+            background: white;
+            padding: 5px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .param-control label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .param-control input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        .param-value {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1em;
+        }
+        
+        .examples-dropdown {
+            margin-bottom: 20px;
+        }
+        
+        .examples-dropdown label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .examples-dropdown select {
+            flex: 1;
+        }
+        
         @media (max-width: 768px) {
-            .documents-container {
+            .documents-container, .param-controls {
                 grid-template-columns: 1fr;
             }
         }
@@ -213,9 +261,27 @@
     <div class="container">
         <h1>🔍 <span class="gradient-text">BM25 Ranking Visualizer</span></h1>
         
+        <div class="examples-dropdown">
+            <label>
+                <span><strong>Load Example:</strong></span>
+                <select id="example-select" onchange="loadExample()" onload="loadExample()">
+                    <option>-- Select an example --</option>
+                    <option value="sample 1">sample 1</option>
+                    <option value="sample 2">sample 2</option>
+                    <option value="sample 3">sample 3</option>
+                    <option value="sample 4">sample 4</option>
+                    <option value="sample 5">sample 5</option>
+                    <option value="sample 6">sample 6</option>
+                    <option value="sample 7">sample 7</option>
+                    <option value="sample 8">sample 8</option>
+
+                </select>
+            </label>
+        </div>
+        
         <div class="input-section">
             <label for="query">Search Query:</label>
-            <input type="text" id="query" placeholder="Enter your search query..." oninput="calculateBM25()">
+            <input dir="auto" type="text" id="query" placeholder="Enter your search query..." oninput="calculateBM25()">
         </div>
         
         <div class="documents-container">
@@ -224,27 +290,47 @@
                 <input type="text" id="title1" placeholder="Enter the first document title..." oninput="calculateBM25()">
                 <br><br>
                 <label for="doc1">Document 1:</label>
-                <textarea id="doc1" placeholder="Enter the first document text..." oninput="calculateBM25()"></textarea>
+                <textarea dir="auto" id="doc1" placeholder="Enter the first document text..." oninput="calculateBM25()"></textarea>
             </div>
             <div class="document">
                 <label for="title2">Title 2:</label>
                 <input type="text" id="title2" placeholder="Enter the second document title..." oninput="calculateBM25()">
                 <br><br>
                 <label for="doc2">Document 2:</label>
-                <textarea id="doc2" placeholder="Enter the second document text..." oninput="calculateBM25()"></textarea>
+                <textarea dir="auto" id="doc2" placeholder="Enter the second document text..." oninput="calculateBM25()"></textarea>
             </div>
         </div>
-        
-        <div class="bm25-params">
-            <h3>BM25 Parameters</h3>
-            <p><strong>k1:</strong> 1.2 (term frequency saturation parameter)</p>
-            <p><strong>b:</strong> 0.75 (length normalization parameter)</p>
-        </div>
-        
         <div class="bm25-formula">
             <h3>BM25 Formula</h3>
             <div class="formula-container">
                 <p>$$\text{BM25}(D, Q) = \sum_{i=1}^{n} \log \frac{M + 1}{df(q_i)} \cdot \frac{f(q_i, D) \cdot (k_1 + 1)}{f(q_i, D) + k_1 \cdot \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)}$$</p>
+            </div>
+        </div>
+        <div class="bm25-params">
+            <h3>BM25 Parameters</h3>
+            <div class="param-controls">
+                <div class="param-control">
+                    <label>
+                        <span><strong>k1:</strong> Term frequency saturation parameter</span>
+                        <span class="param-value" id="k1-value">1.2</span>
+                    </label>
+                    <input type="range" id="k1" min="0.1" max="3.0" step="0.1" value="1.2" oninput="updateK1Value(); calculateBM25();">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #666;">
+                        <span>0.1</span>
+                        <span>3.0</span>
+                    </div>
+                </div>
+                <div class="param-control">
+                    <label>
+                        <span><strong>b:</strong> Length normalization parameter</span>
+                        <span class="param-value" id="b-value">0.75</span>
+                    </label>
+                    <input type="range" id="b" min="0.0" max="1.0" step="0.05" value="0.75" oninput="updateBValue(); calculateBM25();">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #666;">
+                        <span>0.0</span>
+                        <span>1.0</span>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -252,8 +338,110 @@
     </div>
 
     <script>
+        // Predefined examples
+        const examples = {
+            "sample 1": {
+                query: "machine learning algorithm",
+                title1: "",
+                doc1: "Machine learning is a powerful algorithm that can analyze data and make predictions. This algorithm uses statistical methods to improve performance. Machine can analyze and predict",
+                title2: "",
+                doc2: "Deep learning is a subset of machine learning. Neural networks are the foundation of modern artificial intelligence and algorithm development."
+            },
+            "sample 2": {
+                query: "machine learning algorithm",
+                title1: "",
+                doc1: "Machine learning is a powerful algorithm that can analyze data and make predictions. This algorithm uses statistical methods to improve performance of algorithm. Machine learning needs data samples.",
+                title2: "",
+                doc2: "Deep learning is a subset of machine learning and machine Neural networks. Neural networks are the foundation of modern artificial intelligence and learning algorithm development. machine deep learning "
+            },
+            "sample 3": {
+                query: "بلیط‌ تهران به کیش ایران‌ایر",
+                title1: "",
+                doc1: "پرواز تهران به کیش ایران‌ایر بیزینس Boeing MD-82",
+                title2: "",
+                doc2: "پرواز کیش به تهران ایران‌ایر اکونومی"
+            },
+            "sample 4": {
+                query: "آیفون جدید",
+                title1: "",
+                doc1: "گوشی آیفون ۱۵ پرو معرفی شد. این دستگاه دارای دوربین قدرتمند و پردازنده‌ای سریع است که تجربه کاربری را به سطحی بالاتر می‌برد.\n\nویژگی‌های نرم‌افزاری و طراحی مدرن آیفون باعث شده تا کاربران بسیاری مشتاق خرید آن باشند. همچنین امکانات عکاسی در شب بسیار بهبود یافته است.",
+                title2: "",
+                doc2: "آیفون جدید آیفون جدید آیفون بهترین آیفون آیفون. این متن تنها به تکرار واژه آیفون اختصاص داده شده است.\n\nکاربران در اینترنت ممکن است با چنین محتوای اسپمی مواجه شوند که ارزش واقعی ندارد و صرفاً برای جلب توجه الگوریتم جستجو تکرار شده است."
+            },
+            "sample 5": {
+                query: "آیفون جدید",
+                title1: "",
+                doc1: "آیفون اپل با دوربین ۴۸ مگاپیکسل معرفی شد. این گوشی دارای قابلیت‌های نوین در عکاسی و فیلم‌برداری است.\n\nسیستم عامل iOS با امکانات امنیتی بیشتر عرضه شده و طراحی بدنه نیز بهبود یافته است. این ویژگی‌ها آیفون اپل را به محصولی برجسته تبدیل کرده است.",
+                title2: "",
+                doc2: "آیفون تصویری و در باز کن\n آیفون صوتی ابزاری برای برقراری ارتباط صوتی و باز کردن درب می‌باشد. در گذشته، زمانی که هنوز آیفون صوتی جای خود را به آیفون‌های تصویری نداده بودند. ambiguity??!!"
+            },
+            "sample 6": {
+                query: "ماشین برقی تسلا",
+                title1: "",
+                doc1: "ماشین برقی BYD با طراحی مدرن و باتری‌های لیتیوم-یون پیشرفته عرضه می‌شود. این خودرو دارای برد پیمایش حدود ۴۵۰ کیلومتر در هر بار شارژ است و از شارژر سریع نیز پشتیبانی می‌کند.\n",
+                title2: "",
+                doc2: "خودروی الکتریکی تسلا با فناوری خودران و سیستم به‌روزرسانی نرم‌افزاری از راه دور شناخته می‌شود. این خودرو در مدل استاندارد خود تا ۶۰۰ کیلومتر با یک بار شارژ حرکت می‌کند و شتاب صفر تا صد آن کمتر از ۴ ثانیه است.\nمشکل vocabulary mismatch یعنی وقتی کاربر و سند از واژه‌های متفاوت ولی..."
+            },
+            "sample 7": {
+                query: "آیفون ۱۵ پرو",
+                title1: "گوشی آیفون ۱۴ پرو",
+                doc1: "مشخصات کامل گوشی آیفون ۱۴ پرو و ۱۴ پرو پلاس را در ادامه‌ی این پست می‌توانید مشاهده کنید",
+                title2: "بررسی سری ۱۵ آیفون پرو",
+                doc2: "در این پست به بررسی سری ۱۵ ام از گوشی‌های اپل می‌پردازیم"
+            },
+            "sample 8": {
+                query: "تور vip مالزی پرواز تهران",
+                title1: "",
+                doc1: "تور مالزی از مبدا تهران و شیراز با همراهی لیدر و هتل ۵ ستاره",
+                title2: "",
+                doc2: "تور یک هفته‌ای گردش هند با هتل ۳ ستاره‌ی vip و پرواز اکونومی یا پرواز بیزینس"
+            }
+        };
+
+        function loadExample() {
+            const exampleSelect = document.getElementById('example-select');
+            const selectedExample = exampleSelect.value;
+            
+            if (selectedExample && examples[selectedExample]) {
+                const example = examples[selectedExample];
+                document.getElementById('query').value = example.query;
+                document.getElementById('title1').value = example.title1;
+                document.getElementById('doc1').value = example.doc1;
+                document.getElementById('title2').value = example.title2;
+                document.getElementById('doc2').value = example.doc2;
+                calculateBM25();
+            } else {
+                // Initialize with example data
+                document.getElementById('query').value = 'my query to retrieve';
+                document.getElementById('title1').value = 'test my title 1';
+                document.getElementById('title2').value = 'test title 2';
+                document.getElementById('doc1').value = 'Some random text with "query" and "retrieve"';
+                document.getElementById('doc2').value = 'Some random doc with "my"';
+                calculateBM25();
+
+            }
+        }
+
+        function updateK1Value() {
+            document.getElementById('k1-value').textContent = document.getElementById('k1').value;
+        }
+        
+        function updateBValue() {
+            document.getElementById('b-value').textContent = document.getElementById('b').value;
+        }
+
+        // Improved tokenizer that works with Farsi
         function tokenize(text) {
-            return text.toLowerCase().match(/\b\w+\b/g) || [];
+            if (!text) return [];
+            
+            // Normalize text and split on whitespace and punctuation
+            const tokens = text
+                .toLowerCase()
+                .replace(/["'.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ') // Remove punctuation
+                .split(/\s+/)
+                .filter(token => token.length > 0);
+            
+            return tokens;
         }
         
         function calculateTF(term, document) {
@@ -315,7 +503,7 @@
             terms.sort((a, b) => b.length - a.length);
             
             terms.forEach(term => {
-                const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
                 highlightedText = highlightedText.replace(regex, `<span class="highlight">$&</span>`);
             });
             
@@ -328,6 +516,8 @@
             const title2 = document.getElementById('title2').value.trim();
             const doc1 = document.getElementById('doc1').value.trim();
             const doc2 = document.getElementById('doc2').value.trim();
+            const k1 = parseFloat(document.getElementById('k1').value);
+            const b = parseFloat(document.getElementById('b').value);
             const resultsDiv = document.getElementById('results');
             
             if (!query || ((!title1 && !title2) && (!doc1 && !doc2))) {
@@ -360,7 +550,7 @@
             const queryTerms = tokenize(query);
             const results = items.map(item => {
                 const corpus = item.corpus === 'titles' ? titles : documents;
-                const { score, termStats, docLength, avgDocLength } = calculateBM25Score(query, item.text, corpus);
+                const { score, termStats, docLength, avgDocLength } = calculateBM25Score(query, item.text, corpus, k1, b);
                 return {
                     type: item.type,
                     name: item.name,
@@ -377,66 +567,75 @@
             
             // Calculate combined scores for doc+title pairs
             let combinedScores = '';
-            const title1Result = results.find(r => r.name === 'Title 1');
-            const doc1Result = results.find(r => r.name === 'Document 1');
-            const title2Result = results.find(r => r.name === 'Title 2');
-            const doc2Result = results.find(r => r.name === 'Document 2');
             
-            if (title1Result && doc1Result) {
-                const combined1 = title1Result.score + doc1Result.score;
-                combinedScores += `📝📄 Title1+Doc1: ${combined1.toFixed(4)} `;
-            }
-            if (title2Result && doc2Result) {
-                const combined2 = title2Result.score + doc2Result.score;
-                combinedScores += `📝📄 Title2+Doc2: ${combined2.toFixed(4)}`;
+            // Get scores for each component, default to 0 if not present
+            const title1Score = results.find(r => r.name === 'Title 1')?.score || 0;
+            const doc1Score = results.find(r => r.name === 'Document 1')?.score || 0;
+            const title2Score = results.find(r => r.name === 'Title 2')?.score || 0;
+            const doc2Score = results.find(r => r.name === 'Document 2')?.score || 0;
+            
+            // Only show combined scores if both title and document exist for a pair
+            if ((title1 || doc1) && (title2 || doc2)) {
+                const combined1 = title1Score + doc1Score;
+                const combined2 = title2Score + doc2Score;
+                combinedScores = `📝📄 Title1+Doc1: ${combined1.toFixed(4)} | 📝📄 Title2+Doc2: ${combined2.toFixed(4)}`;
             }
             
             let html = '<div class="ranking-info">';
             html += `<strong>Ranking Results for Query:</strong> "${query}"`;
+            html += `<br><strong>Parameters:</strong> k1=${k1}, b=${b}`;
             if (combinedScores) {
                 html += `<br><strong>Combined Scores:</strong> ${combinedScores}`;
             }
             html += '</div>';
             
-            results.forEach((result, index) => {
-                const rankBadge = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
-                const typeIcon = result.type === 'title' ? '📝' : '📄';
-                
-                html += `<div class="document-result">
-                    <div class="document-title">
-                        ${rankBadge} ${typeIcon} ${result.name}
-                        <span class="score-badge">BM25: ${result.score.toFixed(4)}</span>
-                    </div>
-                    <div class="highlighted-text">
-                        ${highlightTerms(result.text, queryTerms)}
-                    </div>
-                    <div class="term-stats">
-                        <div class="term-stat" style="background: #fff3e0; border-left-color: #ff9800;">
-                            <strong>Length Info:</strong> Doc Length=${result.docLength}, Avg Length=${result.avgDocLength.toFixed(1)}
+            if (results.length === 0) {
+                html += '<div class="no-results">No matching documents found.</div>';
+            } else {
+                results.forEach((result, index) => {
+                    const rankBadge = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+                    const typeIcon = result.type === 'title' ? '📝' : '📄';
+                    
+                    html += `<div class="document-result">
+                        <div class="document-title">
+                            ${rankBadge} ${typeIcon} ${result.name}
+                            <span class="score-badge">BM25: ${result.score.toFixed(4)}</span>
+                        </div>
+                        <div dir="auto" class="highlighted-text">
+                            ${highlightTerms(result.text, queryTerms)}
+                        </div>
+                        <div class="term-stats">
+                            <div class="term-stat" style="background: #fff3e0; border-left-color: #ff9800;">
+                                <strong>Length Info:</strong> Doc Length=${result.docLength}, Avg Length=${result.avgDocLength.toFixed(1)}
+                            </div>`;
+                    
+                    Object.entries(result.termStats).forEach(([term, stats]) => {
+                        html += `<div class="term-stat">
+                            <strong>"${term}":</strong> QueryTF=${stats.queryTF}, TF=${stats.tf}, NormalizedTransformed-TF=${stats.tfTransform.toFixed(3)}, IDF=${stats.idf.toFixed(3)}, Score=${stats.score.toFixed(4)}
                         </div>`;
-                
-                Object.entries(result.termStats).forEach(([term, stats]) => {
-                    html += `<div class="term-stat">
-                        <strong>"${term}":</strong> QueryTF=${stats.queryTF}, TF=${stats.tf}, NormalizedTransformed-TF=${stats.tfTransform.toFixed(3)}, IDF=${stats.idf.toFixed(3)}, Score=${stats.score.toFixed(4)}
-                    </div>`;
+                    });
+                    
+                    if (Object.keys(result.termStats).length === 0) {
+                        html += '<div class="term-stat" style="background: #ffebee; border-left-color: #f44336;">No matching terms found</div>';
+                    }
+                    
+                    html += '</div></div>';
                 });
-                
-                if (Object.keys(result.termStats).length === 0) {
-                    html += '<div class="term-stat" style="background: #ffebee; border-left-color: #f44336;">No matching terms found</div>';
-                }
-                
-                html += '</div></div>';
-            });
+            }
             
             resultsDiv.innerHTML = html;
         }
         
         // Initialize with example data
-        document.getElementById('query').value = 'machine learning algorithm';
-        document.getElementById('title1').value = 'Machine Learning Algorithms Overview';
-        document.getElementById('title2').value = 'Deep Learning Neural Networks Guide';
-        document.getElementById('doc1').value = 'Machine learning is a powerful algorithm that can analyze data and make predictions. This algorithm uses statistical methods to improve performance.';
-        document.getElementById('doc2').value = 'Deep learning is a subset of machine learning. Neural networks are the foundation of modern artificial intelligence and algorithm development.';
+        document.getElementById('query').value = 'my query to retrieve';
+        document.getElementById('title1').value = 'test my title 1';
+        document.getElementById('title2').value = 'test title 2';
+        document.getElementById('doc1').value = 'Some random text with "query" and "retrieve"';
+        document.getElementById('doc2').value = 'Some random doc with "my"';
+        
+        // Initialize parameter values
+        updateK1Value();
+        updateBValue();
         
         // Calculate initial results
         calculateBM25();
